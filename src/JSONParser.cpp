@@ -115,6 +115,12 @@ void JSONParser::ParseKeyActionJSON(const std::filesystem::path path) {
 			action.priority = lookup.value().get<int>();
 		}
 		logger::info("Priority: {}", action.priority);
+		action.triggersOnRelease = false;
+		lookup = (*actionIt).find("triggersOnRelease");
+		if (lookup != (*actionIt).end()) {
+			action.triggersOnRelease = lookup.value().get<bool>();
+		}
+		logger::info("triggersOnRelease: {}", action.triggersOnRelease);
 		if (ActionManager::GetSingleton()->AddAction(action)) {
 			logger::info("Action successfully added");
 		}

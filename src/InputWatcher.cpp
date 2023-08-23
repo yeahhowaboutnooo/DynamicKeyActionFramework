@@ -43,6 +43,8 @@ BSEventNotifyControl InputWatcher::ProcessEvent(const InputEvents* evns, BSTEven
 						ActionManager::GetSingleton()->EvaluateAndPerformActions();
 				}
 				else if (isReleased) {
+					if (Globals::ui->numPausesGame == 0 && Globals::p->GetActorRuntimeData().currentProcess)
+						ActionManager::GetSingleton()->EvaluateAndPerformActions(true);
 					ActionManager::GetSingleton()->OnKeyReleased(keyCode);
 				}
 		}

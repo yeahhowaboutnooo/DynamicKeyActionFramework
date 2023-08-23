@@ -6,15 +6,22 @@ using namespace RE;
 
 ActionManager* ActionManager::instance = nullptr;
 
-void ActionManager::EvaluateAndPerformActions() {
+void ActionManager::EvaluateAndPerformActions(bool triggersOnRelease) {
 	std::unordered_set<Action*> queueList;
+	auto &usedKeySet = pressedKeys;
+	if (triggersOnRelease)
+	{
+		usedKeySet = unfilteredPressedKeys;
+	}
 	for (auto actionIt = actions.begin(); actionIt != actions.end(); ++actionIt) {
+		if (actionIt->triggersOnRelease != triggersOnRelease)
+			continue;
 		bool doAction = false;
 		int keyMatchFound = 0;
 		float minDuration = std::numeric_limits<float>::infinity();
 		for (auto keyIt = actionIt->keys.begin(); keyIt != actionIt->keys.end(); ++keyIt) {
-			auto found = pressedKeys.find(*keyIt);
-			if (found != pressedKeys.end()) {
+			auto found = usedKeySet.find(*keyIt);
+			if (found != usedKeySet.end()) {
 				if (found->second <= minDuration) {
 					++keyMatchFound;
 					minDuration = found->second;
@@ -31,8 +38,8 @@ void ActionManager::EvaluateAndPerformActions() {
 			int gamepadKeyMatchFound = 0;
 			float gamepadMinDuration = std::numeric_limits<float>::infinity();
 			for (auto keyIt = actionIt->gamepadKeys.begin(); keyIt != actionIt->gamepadKeys.end(); ++keyIt) {
-				auto found = pressedKeys.find(*keyIt);
-				if (found != pressedKeys.end()) {
+				auto found = usedKeySet.find(*keyIt);
+				if (found != usedKeySet.end()) {
 					if (found->second <= minDuration) {
 						++gamepadKeyMatchFound;
 						gamepadMinDuration = found->second;
@@ -53,7 +60,7 @@ void ActionManager::EvaluateAndPerformActions() {
 	}
 	if (queueList.size() > 0 && !actionQueued) {
 		SetActionQueued(true);
-		SKSE::GetTaskInterface()->AddTask([queueList]() {
+		SKSE::GetTaskInterface()->AddTask([queueList,triggersOnRelease]() {
 			for (auto queueIt = queueList.begin(); queueIt != queueList.end(); ++queueIt) {
 				Action* action = (*queueIt);
 				bool actionSuccess = false;
@@ -156,14 +163,12 @@ void ActionManager::EvaluateAndPerformActions() {
 						//logger::debug("Action Fail");
 					}
 				}
-				if (actionSuccess) {
+				if (actionSuccess && !triggersOnRelease) {
 					for (auto keyIt = action->keys.begin(); keyIt != action->keys.end(); ++keyIt) {
-						ActionManager::GetSingleton()->OnKeyReleased(*keyIt);
-						ActionManager::GetSingleton()->AddFilterKey(*keyIt);
+						ActionManager::GetSingleton()->OnPostPressAction(*keyIt);
 					}
 					for (auto keyIt = action->gamepadKeys.begin(); keyIt != action->gamepadKeys.end(); ++keyIt) {
-						ActionManager::GetSingleton()->OnKeyReleased(*keyIt);
-						ActionManager::GetSingleton()->AddFilterKey(*keyIt);
+						ActionManager::GetSingleton()->OnPostPressAction(*keyIt);
 					}
 					break;
 				}
