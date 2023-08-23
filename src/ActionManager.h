@@ -57,7 +57,7 @@ public:
 			|| !action.actionOrIdle)
 			return false;
 		for (auto actionIt = actions.begin(); actionIt != actions.end(); ++actionIt) {
-			if (*actionIt == action) {
+			if (actionIt->operator==(action)) {
 				return false;
 			}
 		}
